@@ -3,26 +3,16 @@ use num_traits::signum;
 advent_of_code::solution!(2);
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let vec = parse_lines(input);
-
-    let mut count = 0;
-    for v in vec {
-        if is_valid(&v) {
-            count = count + 1
-        }
-    }
-    Some(count as u32)
+    count_valid(input, is_valid)
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
+    count_valid(input, is_valid_without_one)
+}
+
+fn count_valid(input: &str, predicate: fn(&Vec<i32>) -> bool ) -> Option<u32> {
     let vec = parse_lines(input);
-    let mut count = 0;
-    for v in vec {
-        if is_valid(&v) || is_valid_without_one(&v) {
-            count = count + 1
-        }
-    }
-    Some(count as u32)
+    Some(vec.iter().filter(|x|predicate(x)).count() as u32)
 }
 
 fn parse_lines(input: &str) -> Vec<Vec<i32>>{
@@ -30,8 +20,8 @@ fn parse_lines(input: &str) -> Vec<Vec<i32>>{
     for line in input.lines() {
         let mut lin = Vec::<i32>::new();
         for part in line.split_whitespace() {
-            let aa = part.parse::<i32>().ok();
-            lin.push(aa.unwrap())
+            let row = part.parse::<i32>().ok();
+            lin.push(row.unwrap())
         }
         a.push(lin);
     }
@@ -41,16 +31,13 @@ fn parse_lines(input: &str) -> Vec<Vec<i32>>{
 fn is_valid(vec: &Vec<i32>) -> bool {
     let razlike = get_razlike(vec);
     let sgn = signum(razlike[0]);
-    for v in razlike {
-        let x = sgn * v;
-        if x < 1 || x > 3 {
-            return false
-        }
-    }
-    true
+    razlike.iter().all(|v| 0 < sgn*v && sgn*v < 4)
 }
 
 fn is_valid_without_one(vec: &Vec<i32>) -> bool {
+    if is_valid(vec) {
+        return true
+    }
     for i in 0..vec.len() {
         let tmp = [&vec[0..i], &vec[i+1..]].concat();
         if is_valid(&tmp) {
@@ -76,7 +63,7 @@ mod tests {
 
     #[test]
     fn test_part_two() {
-        let result = part_two(&advent_of_code::template::read_file("examples", DAY));
+        let result = part_two(&advent_of_code::template::read_file("inputs", DAY));
         assert_eq!(result, Some(4));
     }
 }

@@ -1,59 +1,60 @@
+use std::collections::HashMap;
+
 advent_of_code::solution!(1);
 
-fn distance(a: &i32, b: &i32) -> i32 {
-    (a - b).abs()
-}
-
-fn day_1_1(vec_numbers: &Vec<Vec<i32>>) -> u32 {
-    let mut ax = vec_numbers[0].to_vec();
-    let mut bx = vec_numbers[1].to_vec();
-    ax.sort();
-    bx.sort();
+pub fn part_one(input: &str) -> Option<u32> {
+    let (mut a, mut b) = parse_lines(input);
+    a.sort();
+    b.sort();
     let mut suma: u32 = 0;
-    for i in 0..ax.len() {
-        suma += distance(&ax[i], &bx[i]) as u32
+    for i in 0..a.len() {
+        suma += distance(&a[i], &b[i])
     }
-    suma
+    Some(suma)
 }
 
-fn similarity(i: &i32, list: &Vec<i32>) -> u32 {
-    let n = list.into_iter().filter(|x| *x == i).count() as i32;
-    (n * i) as u32
+pub fn part_two(input: &str) -> Option<u32> {
+    let (a, b) = parse_lines(input);
+    let suma = get_similarity(&a, &b);
+    Some(suma)
 }
 
-fn day_1_2(vec_numbers: &Vec<Vec<i32>>) -> u32 {
-    let ax = vec_numbers[0].to_vec();
-    let bx = vec_numbers[1].to_vec();
-    let mut suma: u32 = 0;
-    for j in ax {
-        suma += similarity(&j, &bx);
+fn get_similarity(a: &Vec<i32>, b: &Vec<i32>) -> u32 {
+    let a_hist = get_histogram(a);
+    let b_hist = get_histogram(b);
+    let mut sum = 0;
+    for el in a_hist.iter() {
+        let b_el = b_hist.get(el.0).or(Some(&0)).unwrap();
+        sum += el.0 * el.1 * b_el;
     }
-    suma
+    sum as u32
 }
 
-fn parse_lines(input: &str) -> Vec<Vec<i32>> {
-    let mut vec = Vec::<Vec<i32>>::new();
-    vec.push(Vec::<i32>::new());
-    vec.push(Vec::<i32>::new());
+fn get_histogram(vec: &Vec<i32>) -> HashMap<i32,i32> {
+    let mut mapa = HashMap::<i32,i32>::new();
+    for element in vec {
+        let size = mapa.get(element).or(Some(&0)).unwrap();
+        mapa.insert(*element, size + 1);
+    }
+    mapa
+}
+
+fn distance(a: &i32, b: &i32) -> u32 {
+    (a - b).abs() as u32
+}
+
+fn parse_lines(input: &str) -> (Vec<i32>, Vec<i32>) {
+    let mut a = Vec::<i32>::new();
+    let mut b = Vec::<i32>::new();
 
     for line in input.lines() {
         let mut parts = line.split_whitespace();
         let aa = parts.next().map(|f| f.parse::<i32>().ok()).flatten();
         let bb = parts.next().map(|f| f.parse::<i32>().ok()).flatten();
-        vec[0].push(aa.unwrap());
-        vec[1].push(bb.unwrap());
+        a.push(aa.unwrap());
+        b.push(bb.unwrap());
     }
-    vec
-}
-
-pub fn part_one(input: &str) -> Option<u32> {
-    let vec_numbers = parse_lines(input);
-    Some(day_1_1(&vec_numbers))
-}
-
-pub fn part_two(input: &str) -> Option<u32> {
-    let vec_numbers = parse_lines(input);
-    Some(day_1_2(&vec_numbers))
+    (a, b)
 }
 
 #[cfg(test)]
@@ -62,13 +63,13 @@ mod tests {
 
     #[test]
     fn test_part_one() {
-        let result = part_one(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, Some(11));
+        let result = part_one(&advent_of_code::template::read_file("inputs", DAY));
+        assert_eq!(result, Some(3714264));
     }
 
     #[test]
     fn test_part_two() {
-        let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, Some(31));
+        let result = part_two(&advent_of_code::template::read_file("inputs", DAY));
+        assert_eq!(result, Some(18805872));
     }
 }
