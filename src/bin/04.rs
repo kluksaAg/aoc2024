@@ -1,65 +1,97 @@
 advent_of_code::solution!(4);
 
 const SEEK: &str = "XMAS";
-const DIRECTIONS: [(i32, i32); 8] = [
-    (1, 0),
-    (1, 1),
-    (0, 1),
-    (-1, 1),
-    (-1, 0),
-    (-1, -1),
-    (0, -1),
-    (1, -1),
+const DIRECTIONS: [Point; 8] = [
+    Point { x: 1, y: 0 },
+    Point { x: 1, y: 1 },
+    Point { x: 0, y: 1 },
+    Point { x: -1, y: 1 },
+    Point { x: -1, y: 0 },
+    Point { x: -1, y: -1 },
+    Point { x: 0, y: -1 },
+    Point { x: 1, y: -1 },
 ];
 
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+impl Point {
+    fn multiply(&self, c: i32) -> Self {
+        let x = self.x * c;
+        let y = self.y * c;
+        Point { x, y }
+    }
+    fn add(&self, c: &Point) -> Self {
+        let x = self.x + c.x;
+        let y = self.y + c.y;
+        Point { x, y }
+    }
+}
+
+struct Grid {
+    width: usize,
+    height: usize,
+    grid: Vec<Vec<char>>
+}
+
+impl Grid {
+    fn is_valid_point(&self, t: &Point) -> bool {
+        t.x >= 0 && t.x < self.width as i32 && t.y >= 0 && t.y < self.height as i32
+    }
+}
+
 pub fn part_one(input: &str) -> Option<u32> {
-    let data = get_char_array(input);
+    let lines = get_char_array(input);
+    let data = Grid { width: lines[0].len(), height: lines.len(), grid : lines};
     let mut count = 0;
-    for j in 0..data.len() {
-        for i in 0..data[0].len() {
-            if data[j][i] == 'X' {
-                count += count_matches_in_all_directions(&data, i, j)
-            }
+    for j in 0..data.height {
+        for i in 0..data.width {
+            let origin = Point {x: i as i32, y: j as i32};
+            count += count_matches_in_all_directions(&data, &origin)
         }
     }
     Some(count as u32)
 }
 
-fn count_matches_in_all_directions(data: &Vec<Vec<char>>, i: usize, j: usize) -> i32 {
-    let mut count = 0;
-    for smjer in DIRECTIONS {
-        let coordinates = get_coordinates_in_direction(smjer, i, j, data[0].len(), data.len());
-        if coordinates.is_some() && matches_in_direction(data, coordinates.unwrap()) {
-            count += 1;
-        }
+fn count_matches_in_all_directions(data: &Grid, origin: &Point) -> i32 {
+    if data.grid[origin.y as usize][origin.x as usize] == 'X' {
+        DIRECTIONS
+            .iter()
+            .filter_map(|smjer| get_coordinate_vector_in_direction(smjer, origin, data))
+            .filter(|coordinate_vec| matches_in_direction(data, coordinate_vec))
+            .count() as i32
+    } else {
+        0
     }
-    count
 }
 
-fn get_coordinates_in_direction(smjer: (i32, i32), i: usize, j: usize, lenx: usize, leny: usize) -> Option<Vec<(usize, usize)>> {
-    let mut koord = Vec::<(usize, usize)>::new();
-    for c in 0..4 {
-        let x = i as i32 + c * smjer.0;
-        let y = j as i32 + c * smjer.1;
-        if x >= 0 && x < lenx as i32 && y >= 0 && y < leny as i32 {
-            koord.push((x as usize, y as usize));
-        }
-    }
-    if koord.len() == 4 {
-        Some(koord)
+fn get_coordinate_vector_in_direction(direction: &Point, origin: &Point, data: &Grid)
+                                      -> Option<Vec<Point>> {
+    let res: Vec<Point>= (0..SEEK.len() as i32).into_iter()
+        .map(|step| calc_coord(direction, origin, step))
+        .filter(|t| data.is_valid_point(&t))
+        .collect();
+    if res.len() == 4 {
+        Some(res)
     } else {
         None
     }
 }
 
-fn matches_in_direction(data: &Vec<Vec<char>>, coordinates: Vec<(usize, usize)>) -> bool {
+fn calc_coord(smjer: &Point, origin: &Point, c: i32) -> Point {
+    smjer.multiply(c).add(origin)
+}
+
+fn matches_in_direction(data: &Grid, coordinates: &Vec<Point>) -> bool {
     if coordinates.len() != SEEK.len() {
         return false;
     }
-    let mut k = coordinates.iter();
+    let mut k_iter = coordinates.iter();
     for chr in SEEK.chars() {
-        let x = k.next().unwrap();
-        if chr != data[x.1][x.0] {
+        let t = k_iter.next().unwrap();
+        if chr != data.grid[t.y as usize][t.x as usize] {
             return false;
         }
     }
